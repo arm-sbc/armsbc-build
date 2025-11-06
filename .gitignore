@@ -29,3 +29,5 @@ rk-tools/build/
 
 # System files
 .DS_Store
+trusted-firmware-a/
+u-boot/
