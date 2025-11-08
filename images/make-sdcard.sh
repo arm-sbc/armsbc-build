@@ -293,9 +293,13 @@ if [ -n "$DTB_FILE" ]; then
   cp "$DTB_FILE" "$BOOT_DIR/"
 fi
 
-KVER=$(basename "$OUT_DIR"/config-* 2>/dev/null | cut -d'-' -f2-)
-[ -f "$OUT_DIR/config-$KVER" ]     && cp "$OUT_DIR/config-$KVER"     "$BOOT_DIR/config"
-[ -f "$OUT_DIR/System.map-$KVER" ] && cp "$OUT_DIR/System.map-$KVER" "$BOOT_DIR/System.map"
+# copy kernel extras if present
+KVER_FILE=$(ls "$OUT_DIR"/config-* 2>/dev/null | head -n1 || true)
+if [ -n "$KVER_FILE" ]; then
+  KVER=$(basename "$KVER_FILE" | cut -d'-' -f2-)
+  [ -f "$OUT_DIR/config-$KVER" ]     && cp "$OUT_DIR/config-$KVER"     "$BOOT_DIR/config"
+  [ -f "$OUT_DIR/System.map-$KVER" ] && cp "$OUT_DIR/System.map-$KVER" "$BOOT_DIR/System.map"
+fi
 
 EXTLINUX_DIR="$BOOT_DIR/extlinux"
 mkdir -p "$EXTLINUX_DIR"
@@ -303,7 +307,7 @@ mkdir -p "$EXTLINUX_DIR"
 case "$CHIP" in
   rk3588|rk3568|rk3566|rk3399) CONSOLE="ttyS2"; BAUD="1500000" ;;
   *)                           CONSOLE="ttyS0"; BAUD="115200"  ;;
-esac 
+esac
 
 DTB_BASENAME=$(basename "$DTB_FILE")
 cat > "$EXTLINUX_DIR/extlinux.conf" <<EOF

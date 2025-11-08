@@ -1,5 +1,5 @@
 --- /dev/null
-+++ configs/armsbc-dca-rk3566_defconfig	2025-06-04 06:41:24.591604840 +0400
++++ a/configs/armsbc-dca-rk3566_defconfig	2025-06-04 06:41:24.591604840 +0400
 @@ -0,0 +1,98 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
@@ -100,7 +100,7 @@
 +CONFIG_USB_DWC3_GENERIC=y
 +CONFIG_ERRNO_STR=y
 --- /dev/null
-+++ configs/armsbc-dca-rk3568_defconfig	2025-06-04 06:40:59.490571187 +0400
++++ a/configs/armsbc-dca-rk3568_defconfig	2025-06-04 06:40:59.490571187 +0400
 @@ -0,0 +1,84 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
@@ -187,7 +187,7 @@
 +CONFIG_USB_FUNCTION_ROCKUSB=y
 +CONFIG_ERRNO_STR=y
 --- /dev/null
-+++ configs/armsbc-nano-rk3568_defconfig	2025-06-04 07:48:00.725623993 +0400
++++ a/configs/armsbc-nano-rk3568_defconfig	2025-06-04 07:48:00.725623993 +0400
 @@ -0,0 +1,98 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
@@ -288,7 +288,7 @@
 +CONFIG_USB_DWC3_GENERIC=y
 +CONFIG_ERRNO_STR=y
 --- /dev/null
-+++ arch/arm/dts/rk3566-armsbc-dca-u-boot.dtsi	2025-06-04 07:52:02.102743001 +0400
++++ a/arch/arm/dts/rk3566-armsbc-dca-u-boot.dtsi	2025-06-04 07:52:02.102743001 +0400
 @@ -0,0 +1,10 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +
@@ -301,7 +301,7 @@
 +	};
 +};
 --- /dev/null
-+++ arch/arm/dts/rk3568-armsbc-dca-u-boot.dtsi	2025-06-04 07:52:02.102743001 +0400
++++ a/arch/arm/dts/rk3568-armsbc-dca-u-boot.dtsi	2025-06-04 07:52:02.102743001 +0400
 @@ -0,0 +1,10 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +
@@ -314,7 +314,7 @@
 +	};
 +};
 --- /dev/null
-+++ arch/arm/dts/rk3568-armsbc-nano-u-boot.dtsi	2025-06-04 07:52:26.610747368 +0400
++++ a/arch/arm/dts/rk3568-armsbc-nano-u-boot.dtsi	2025-06-04 07:52:26.610747368 +0400
 @@ -0,0 +1,10 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +
@@ -327,7 +327,7 @@
 +	};
 +};
 --- /dev/null
-+++ dts/upstream/src/arm64/rockchip/rk3566-armsbc-dca.dts
++++ a/dts/upstream/src/arm64/rockchip/rk3566-armsbc-dca.dts
 @@ -0,0 +1,726 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +
@@ -1056,7 +1056,7 @@
 +	status = "okay";
 +};
 --- /dev/null
-+++ arch/arm/dts/rk3568-armsbc-dca.dts	2025-06-04 06:43:58.669799330 +0400
++++ a/arch/arm/dts/rk3568-armsbc-dca.dts	2025-06-04 06:43:58.669799330 +0400
 @@ -0,0 +1,77 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
@@ -1135,8 +1135,8 @@
 +&usb2phy0_otg {
 +	status = "okay";
 +};
---- dts/upstream/src/arm64/rockchip/rk3568-armsbc-nano.dts	1970-01-01 04:00:00.000000000 +0400
-+++ dts/upstream/src/arm64/rockchip/rk3568-armsbc-nano.dts	2025-06-04 07:46:37.301542565 +0400
+--- /dev/null
++++ a/dts/upstream/src/arm64/rockchip/rk3568-armsbc-nano.dts	2025-06-04 07:46:37.301542565 +0400
 @@ -0,0 +1,905 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*

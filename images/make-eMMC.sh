@@ -48,7 +48,7 @@ info "BASE_DIR=$BASE_DIR"
 info "OUT_DIR=$OUT_DIR"
 
 # ----------------------------------------------------------
-# firmware helper (same as before)
+# firmware helper
 # ----------------------------------------------------------
 install_armbian_firmware() {
   local target="$1"
@@ -96,7 +96,7 @@ BOARD="$(basename "$OUT_DIR")"
 info "Detected BOARD=$BOARD"
 
 # ----------------------------------------------------------
-# load build.env if present (this is the new bit)
+# load build.env if present
 # ----------------------------------------------------------
 if [ -f "$OUT_DIR/build.env" ]; then
   info "Loading $OUT_DIR/build.env"
@@ -109,7 +109,6 @@ fi
 # ----------------------------------------------------------
 DTB_PATH=""
 
-# if board exported DEVICE_TREE, try to resolve it to a real .dtb first
 if [ -n "${DEVICE_TREE:-}" ]; then
   dtb_name="${DEVICE_TREE%.dts}.dtb"
   if [ -f "$OUT_DIR/dtb/$dtb_name" ]; then
@@ -119,13 +118,11 @@ if [ -n "${DEVICE_TREE:-}" ]; then
   fi
 fi
 
-# then chip
 if [ -n "$PASSED_CHIP" ]; then
   CHIP="$PASSED_CHIP"
 elif [ -n "${CHIP:-}" ]; then
   CHIP="$CHIP"
 else
-  # if still no chip, try to detect from dtb (maybe from above)
   if [ -z "$DTB_PATH" ]; then
     DTB_PATH=$(find "$OUT_DIR" -maxdepth 1 -name '*.dtb' | head -n1)
     [ -z "$DTB_PATH" ] && DTB_PATH=$(find "$OUT_DIR/dtb" -maxdepth 1 -name '*.dtb' 2>/dev/null | head -n1)
@@ -138,14 +135,13 @@ else
 fi
 info "Using CHIP=$CHIP"
 
-# if after all that DTB_PATH is still empty, fall back to your old search
 if [ -z "$DTB_PATH" ]; then
   DTB_PATH=$(find "$OUT_DIR" -maxdepth 1 -name '*.dtb' | head -n1)
   [ -z "$DTB_PATH" ] && DTB_PATH=$(find "$OUT_DIR/dtb" -maxdepth 1 -name '*.dtb' 2>/dev/null | head -n1)
 fi
 
 # ----------------------------------------------------------
-# tool and file paths (unchanged)
+# tool and file paths
 # ----------------------------------------------------------
 AFPTOOL="$RK_TOOLS_DIR/afptool"
 RKIMAGEMAKER="$RK_TOOLS_DIR/rkImageMaker"
@@ -164,7 +160,7 @@ BOOT_MERGER="$RK_BIN_DIR/tools/boot_merger"
 [ -x "$BOOT_MERGER" ]    || error "boot_merger not found/executable: $BOOT_MERGER"
 
 # ---------------------------------------------------------------------------
-# ensure loader (keep original name in OUT_DIR too)
+# ensure loader
 # ---------------------------------------------------------------------------
 LOADER_BIN="$OUT_DIR/${CHIP}_loader.bin"
 
@@ -203,6 +199,14 @@ if [ -n "$DTB_PATH" ]; then
 else
   warn "No DTB found to copy into boot/"
 fi
+
+# >>> NEW: copy config-* and System.map-* if present <<<
+KVER=$(basename "$OUT_DIR"/config-* 2>/dev/null | cut -d'-' -f2-)
+if [ -n "$KVER" ]; then
+  [ -f "$OUT_DIR/config-$KVER" ]     && cp "$OUT_DIR/config-$KVER"     "$BOOT_DIR/config"
+  [ -f "$OUT_DIR/System.map-$KVER" ] && cp "$OUT_DIR/System.map-$KVER" "$BOOT_DIR/System.map"
+fi
+# <<< end new >>>
 
 EXTLINUX_DIR="$BOOT_DIR/extlinux"
 mkdir -p "$EXTLINUX_DIR"
@@ -258,13 +262,11 @@ sudo mount "$ROOTFS_IMG" "$MNT_DIR"
 info "Copying rootfs into image ..."
 sudo rsync -aAX --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*"} "$ROOTFS_SRC/" "$MNT_DIR/" 2> >(grep -v "Permission denied" >&2)
 
-# copy modules if present
 if [ -d "$OUT_DIR/lib/modules" ]; then
   sudo mkdir -p "$MNT_DIR/lib/modules"
   sudo cp -a "$OUT_DIR/lib/modules/"* "$MNT_DIR/lib/modules/"
 fi
 
-# NEW: install armbian firmware into the mounted rootfs
 install_armbian_firmware "$MNT_DIR"
 
 sync
