@@ -37,7 +37,7 @@ if [ -f "$BOARD_PATCH" ]; then
   info "Applying board-specific U-Boot patch: $(basename "$BOARD_PATCH")"
   (
     cd "$UBOOT_DIR"
-    patch -Np1 -i "$BOARD_PATCH" && success "Board patch applied"
+    patch -Np0 -i "$BOARD_PATCH" && success "Board patch applied"
   ) || warn "Board patch $(basename "$BOARD_PATCH") failed or already applied"
 else
   info "No board-specific U-Boot patch for $BOARD"
