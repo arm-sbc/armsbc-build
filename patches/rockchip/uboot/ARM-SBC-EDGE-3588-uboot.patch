@@ -1,5 +1,5 @@
 --- /dev/null
-+++ b/configs/armsbc-edge-rk3588_defconfig	2025-03-16 17:06:34.250003786 +0400
++++ configs/armsbc-edge-rk3588_defconfig	2025-03-16 17:06:34.250003786 +0400
 @@ -0,0 +1,80 @@
 +CONFIG_ARM=y
 +CONFIG_SKIP_LOWLEVEL_INIT=y
@@ -83,7 +83,7 @@
 +CONFIG_ERRNO_STR=y
 
 --- /dev/null
-+++ b/dts/upstream/src/arm64/rockchip/rk3588-armsbc-edge.dts	2025-03-16 17:16:11.318896717 +0400
++++ /dts/upstream/src/arm64/rockchip/rk3588-armsbc-edge.dts	2025-03-16 17:16:11.318896717 +0400
 @@ -0,0 +1,1073 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
@@ -496,7 +496,7 @@
 +		pinctrl-0 = <&rtl8211_rst>;
 +		reset-assert-us = <20000>;
 +		reset-deassert-us = <100000>;
-+		reset-gpios = <&gpio4 RK_PB3 GPIO_ACTIVE_LOW>;
++		reset-gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_LOW>;
 +	};
 +};
 +
@@ -553,7 +553,7 @@
 +		};
 +		
 +		rtl8211f_rst: rtl8211f-rst {
-+			rockchip,pins = <4 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
++			rockchip,pins = <3 RK_PCo RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +	};
 +		

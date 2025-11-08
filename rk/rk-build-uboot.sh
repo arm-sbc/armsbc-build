@@ -52,7 +52,7 @@ do
   info "Applying common/generic U-Boot patch: $(basename "$p")"
   (
     cd "$UBOOT_DIR"
-    patch -Np1 -i "$p" && success "Common patch applied: $(basename "$p")"
+    patch -Np0 -i "$p" && success "Common patch applied: $(basename "$p")"
   ) || warn "Common patch $(basename "$p") failed or already applied"
 done
 
