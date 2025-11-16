@@ -5,3 +5,4 @@ CROSS_COMPILE="aarch64-linux-gnu-"
 UBOOT_DEFCONFIG="armsbc-rwa-a64_defconfig"
 KERNEL_DEFCONFIG="armsbc-a64_defconfig"
 DEVICE_TREE="sun50i-a64-armsbc-rwa.dts" 
+DESKTOP_FLAVOR=lxqt
