@@ -176,7 +176,7 @@
  			compatible = "vivante,gc";
  			reg = <0x07122000 0x1000>;
 
-    --- a/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi
+--- a/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi
 +++ b/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi
 @@ -818,6 +818,21 @@
  			#reset-cells = <1>;
@@ -200,6 +200,7 @@
  		mcu_dma: dma-controller@7121000 {
  			compatible = "allwinner,sun55i-a523-mcu-dma",
  				     "allwinner,sun50i-a100-dma";
+          
 --- a/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi
 +++ b/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi
 @@ -818,6 +818,62 @@
