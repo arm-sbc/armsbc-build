@@ -5,3 +5,4 @@ CROSS_COMPILE="arm-linux-gnueabihf-"
 UBOOT_DEFCONFIG="armsbc-xz-a83t_defconfig"
 KERNEL_DEFCONFIG="armsbc-a83_defconfig" 
 DEVICE_TREE="sun8i-a83t-armsbc-xz.dts" 
+DESKTOP_FLAVOR=lxqt
