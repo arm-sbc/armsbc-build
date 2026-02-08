@@ -52,13 +52,43 @@ info "Using output dir: $OUTPUT_DIR"
 
 install_deps() {
   section_start "Install dependencies"
-  sudo apt-get update -y >/dev/null
-  sudo apt-get install -y \
-    git wget curl bc build-essential device-tree-compiler \
-    qemu-user-static debootstrap xz-utils >/dev/null
+
+  REQUIRED_PACKAGES=(
+    git wget curl bc build-essential
+    device-tree-compiler
+    qemu-user qemu-user-static binfmt-support
+    debootstrap xz-utils
+    swig bison flex
+    gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+    libssl-dev libncurses-dev
+    python3 python3-pip python3-pyelftools
+    genext2fs uuid-dev
+    picocom
+    libgnutls28-dev
+  )
+
+  MISSING_PACKAGES=()
+
+  for pkg in "${REQUIRED_PACKAGES[@]}"; do
+    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
+      MISSING_PACKAGES+=("$pkg")
+    fi
+  done
+
+  if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
+    info "Installing missing packages: ${MISSING_PACKAGES[*]}"
+    sudo apt-get update -y >/dev/null
+    sudo apt-get install -y "${MISSING_PACKAGES[@]}" >/dev/null || {
+      error "Failed to install required dependencies"
+      exit 1
+    }
+    success "All required system packages installed"
+  else
+    info "All required system dependencies already installed"
+  fi
+
   section_end "Install dependencies"
 }
-
 clean_for_all() {
   section_start "Clean board output"
   rm -rf "$OUTPUT_DIR"/*
