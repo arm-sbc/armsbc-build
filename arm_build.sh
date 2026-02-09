@@ -419,7 +419,7 @@ main() {
           ;;
         sunxi)
           if [ -x "$BASE_DIR/sunxi/sunxi-build-uboot.sh" ]; then
-            "$BASE_DIR/sunxi/sunxi-build-uboot.shh" "$BUILD_OPTION"
+            "$BASE_DIR/sunxi/sunxi-build-uboot.sh" "$BUILD_OPTION"
           else
             error "sunxi/sunxi-build-uboot.sh not found or not executable"
           fi
