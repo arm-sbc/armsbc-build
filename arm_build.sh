@@ -367,10 +367,10 @@ main() {
           "$BASE_DIR/rk-compile.sh" all
           ;;
         sunxi)
-          if [ -x "$BASE_DIR/sunxi/sunxi-compile.sh" ]; then
-            "$BASE_DIR/sunxi/sunxi-compile.sh" all
+          if [ -x "$BASE_DIR/sunxi/sunxi-uboot-compile.sh" ]; then
+            "$BASE_DIR/sunxi/sunxi-uboot-compile.sh" all
           else
-            error "sunxi/sunxi-compile.sh not found or not executable"
+            error "sunxi/sunxi-uboot-compile.sh not found or not executable"
           fi
           ;;
         *)
