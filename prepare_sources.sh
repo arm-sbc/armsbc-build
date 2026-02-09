@@ -5,24 +5,23 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$BASE_DIR/common/log.sh"
 
 get_latest_stable_kernel() {
-  # pulls the latest *stable* (not -rc) from kernel.org
-  local latest
-  latest=$(
-    curl -s https://www.kernel.org/ \
+  curl -s https://www.kernel.org/ \
     | grep -oP 'linux-\K[0-9]+\.[0-9]+\.[0-9]+(?=\.tar\.xz)' \
     | grep -v rc \
     | head -n1
-  )
-  echo "$latest"
 }
 
 script_start
 
 MODE="--all"
-CHIP_FAMILY=""
-BOARD=""
 
-# parse args
+# Prefer env exported by arm_build.sh; allow CLI args to override.
+CHIP_FAMILY="${CHIP_FAMILY:-}"
+BOARD="${BOARD:-}"
+ARCH="${ARCH:-}"
+CHIP="${CHIP:-}"
+
+# parse args (optional overrides)
 while [ $# -gt 0 ]; do
   case "$1" in
     --all|--uboot|--kernel|--rootfs)
@@ -41,10 +40,18 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-[ -z "$CHIP_FAMILY" ] && CHIP_FAMILY="rockchip"
-[ -z "$BOARD" ] && BOARD="generic"
+# Hard require these (arm_build.sh should export them)
+[ -z "$CHIP_FAMILY" ] && error "CHIP_FAMILY not set (arm_build.sh must export it or pass --family)"
+[ -z "$BOARD" ]       && error "BOARD not set (arm_build.sh must export it or pass --board)"
 
-# make sure OUT exists (not armsbc-build/)
+# Optional but strongly recommended for sunxi TF-A logic
+# (rockchip path doesn't need ARCH/CHIP here)
+if [ "$CHIP_FAMILY" = "sunxi" ]; then
+  [ -z "$ARCH" ] && warn "ARCH not set for sunxi; TF-A decision may be wrong"
+  [ -z "$CHIP" ] && warn "CHIP not set for sunxi; TF-A decision may be wrong"
+fi
+
+# make sure OUT exists
 OUTPUT_DIR="$BASE_DIR/OUT/${CHIP_FAMILY}/${BOARD}"
 mkdir -p "$OUTPUT_DIR"
 export OUTPUT_DIR
@@ -68,20 +75,14 @@ install_deps() {
   )
 
   MISSING_PACKAGES=()
-
   for pkg in "${REQUIRED_PACKAGES[@]}"; do
-    if ! dpkg -s "$pkg" >/dev/null 2>&1; then
-      MISSING_PACKAGES+=("$pkg")
-    fi
+    dpkg -s "$pkg" >/dev/null 2>&1 || MISSING_PACKAGES+=("$pkg")
   done
 
   if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     info "Installing missing packages: ${MISSING_PACKAGES[*]}"
     sudo apt-get update -y >/dev/null
-    sudo apt-get install -y "${MISSING_PACKAGES[@]}" >/dev/null || {
-      error "Failed to install required dependencies"
-      exit 1
-    }
+    sudo apt-get install -y "${MISSING_PACKAGES[@]}" >/dev/null || error "Failed to install required dependencies"
     success "All required system packages installed"
   else
     info "All required system dependencies already installed"
@@ -89,32 +90,11 @@ install_deps() {
 
   section_end "Install dependencies"
 }
+
 clean_for_all() {
   section_start "Clean board output"
   rm -rf "$OUTPUT_DIR"/*
   section_end "Clean board output"
-}
-
-clean_old_sources() {
-  local target_dir="$1"
-  local what="$2"  # "U-Boot" / "Kernel" / etc.
-
-  if [ -d "$target_dir" ]; then
-    warn "$what source already exists: $target_dir"
-
-    if [ "${BUILD_FORCE:-0}" -eq 1 ]; then
-      info "BUILD_FORCE=1 → removing without prompt..."
-      rm -rf "$target_dir"
-    else
-      read -rp "Remove and re-download $what sources? [y/N]: " ans
-      if [[ "$ans" =~ ^[Yy]$ ]]; then
-        info "Removing $target_dir ..."
-        rm -rf "$target_dir"
-      else
-        info "Keeping existing $what source tree."
-      fi
-    fi
-  fi
 }
 
 download_uboot_stack() {
@@ -126,33 +106,35 @@ download_uboot_stack() {
     info "u-boot not present → cloning fresh"
     git clone https://github.com/u-boot/u-boot.git "$UBOOT_DIR"
   else
-    # repo exists → reset to clean tree so patches apply
-    if [ "${BUILD_FORCE:-0}" -eq 1 ]; then
-      info "BUILD_FORCE=1 → hard reset u-boot"
-      (
-        cd "$UBOOT_DIR"
-        git fetch --all --prune
-        git reset --hard origin/master
-        git clean -fdx
-      )
-    else
-      info "u-boot exists → resetting to origin/master"
-      (
-        cd "$UBOOT_DIR"
-        git fetch --all --prune >/dev/null 2>&1 || true
-        git reset --hard origin/master
-        git clean -fdx
-      )
-    fi
+    info "u-boot exists → resetting to origin/master"
+    (
+      cd "$UBOOT_DIR"
+      git fetch --all --prune >/dev/null 2>&1 || true
+      git reset --hard origin/master
+      git clean -fdx
+    )
   fi
 
+  # Rockchip extra deps
   if [ "$CHIP_FAMILY" = "rockchip" ]; then
     if [ ! -d "$BASE_DIR/rkbin" ]; then
       git clone https://github.com/rockchip-linux/rkbin.git "$BASE_DIR/rkbin"
     else
       info "rkbin already exists, skipping"
     fi
+
     if [ ! -d "$BASE_DIR/trusted-firmware-a" ]; then
+      git clone https://git.trustedfirmware.org/TF-A/trusted-firmware-a.git "$BASE_DIR/trusted-firmware-a"
+    else
+      info "trusted-firmware-a already exists, skipping"
+    fi
+  fi
+
+  # Sunxi arm64 needs TF-A BL31 in our build flow (A523/A527/T527 etc.)
+  if [ "$CHIP_FAMILY" = "sunxi" ] && [ "${ARCH:-}" = "arm64" ]; then
+    if [ ! -d "$BASE_DIR/trusted-firmware-a/.git" ]; then
+      info "sunxi arm64 → cloning trusted-firmware-a"
+      rm -rf "$BASE_DIR/trusted-firmware-a" 2>/dev/null || true
       git clone https://git.trustedfirmware.org/TF-A/trusted-firmware-a.git "$BASE_DIR/trusted-firmware-a"
     else
       info "trusted-firmware-a already exists, skipping"
@@ -165,8 +147,7 @@ download_uboot_stack() {
 download_kernel() {
   section_start "Download kernel"
 
-  # 1) decide which version to use
-  if [ -n "$KERNEL_VERSION" ]; then
+  if [ -n "${KERNEL_VERSION:-}" ]; then
     info "Using kernel version from environment: $KERNEL_VERSION"
   else
     info "KERNEL_VERSION not set → fetching latest stable from kernel.org..."
@@ -175,7 +156,6 @@ download_kernel() {
     info "Latest stable kernel detected: $KERNEL_VERSION"
   fi
 
-  # write it so rk-build-kernel.sh can read
   echo "$KERNEL_VERSION" > "$OUTPUT_DIR/kernel.version"
 
   local TAR="linux-${KERNEL_VERSION}.tar.xz"
@@ -183,7 +163,6 @@ download_kernel() {
   local URL="https://cdn.kernel.org/pub/linux/kernel/v${MAJ}.x/${TAR}"
   local KDIR="$BASE_DIR/linux-${KERNEL_VERSION}"
 
-  # download tarball
   if [ ! -f "$BASE_DIR/$TAR" ]; then
     info "Downloading kernel tarball: $TAR"
     wget -q "$URL" -O "$BASE_DIR/$TAR"
@@ -191,7 +170,6 @@ download_kernel() {
     info "Kernel tarball already exists: $TAR"
   fi
 
-  # IMPORTANT: kernel is not a git repo → always extract fresh
   if [ -d "$KDIR" ]; then
     warn "Kernel source folder already exists: $KDIR → removing for a clean tree"
     rm -rf "$KDIR"

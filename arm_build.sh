@@ -105,7 +105,7 @@ load_board_config() {
   # shellcheck source=/dev/null
   . "$CFG"
   info "Loaded board config: CHIP=$CHIP ARCH=$ARCH"
-  export BOARD CHIP ARCH CROSS_COMPILE UBOOT_DEFCONFIG KERNEL_DEFCONFIG DEVICE_TREE
+  export BOARD CHIP ARCH CROSS_COMPILE UBOOT_DEFCONFIG KERNEL_DEFCONFIG DEVICE_TREE CHIP_FAMILY
   # NEW: if board_config.sh defined a desktop, pass it down to all children
   if [ -n "${DESKTOP_FLAVOR:-}" ]; then
     export DESKTOP_FLAVOR
@@ -301,6 +301,8 @@ main() {
   select_board
   load_board_config
   select_build_option
+  export CHIP_FAMILY BOARD CHIP ARCH
+
 
   OUTPUT_DIR="$BASE_DIR/OUT/${CHIP_FAMILY}/${BOARD}"
   mkdir -p "$OUTPUT_DIR"
