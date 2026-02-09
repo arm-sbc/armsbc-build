@@ -45,20 +45,30 @@ debug()   { log_internal DEBUG "$@"; }
 success() { log_internal SUCCESS "$@"; }
 
 # Prompt for output directory
-OUT_DIRS=(OUT-ARM-SBC-*)
-if [ ${#OUT_DIRS[@]} -eq 0 ]; then
-  error "No output directories found."
-fi
+# ---- locate output dir ----
+# Prefer OUTPUT_DIR exported by arm_build.sh (absolute path recommended)
+if [ -n "${OUTPUT_DIR:-}" ] && [ -d "${OUTPUT_DIR:-}" ]; then
+  OUT_DIR="$OUTPUT_DIR"
+  info "Using OUTPUT_DIR from environment: $OUT_DIR"
+else
+  # Fall back to selecting from repo OUT/<family>/<board>
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-info "Available output directories:"
-select BOARD_DIR in "${OUT_DIRS[@]}"; do
-  if [ -n "$BOARD_DIR" ]; then
+  mapfile -t OUT_DIRS < <(find "$REPO_DIR/OUT" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | sort)
+
+  [ ${#OUT_DIRS[@]} -gt 0 ] || error "No output directories found under $REPO_DIR/OUT/<family>/<board>"
+
+  info "Select output directory:"
+  select BOARD_DIR in "${OUT_DIRS[@]}"; do
+    [ -n "${BOARD_DIR:-}" ] || continue
     OUT_DIR="$BOARD_DIR"
     break
-  fi
-done
+  done
+fi
 
 dtb_file=$(find "$OUT_DIR" -name '*.dtb' | head -n1)
+[ -n "$dtb_file" ] || error "No .dtb found under: $OUT_DIR (did you build kernel dtbs and copy them into OUT?)"
 CHIP=$(basename "$dtb_file" | cut -d'-' -f1)
 log_internal INFO "Detected chip: $CHIP"
 
