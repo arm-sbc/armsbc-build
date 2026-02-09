@@ -367,10 +367,10 @@ main() {
           "$BASE_DIR/rk-compile.sh" all
           ;;
         sunxi)
-          if [ -x "$BASE_DIR/sunxi/sunxi-build-uboot.sh" ]; then
-            "$BASE_DIR/sunxi/sunxi-build-uboot.sh" all
+          if [ -x "$BASE_DIR/sunxi-compile.sh" ]; then
+            "$BASE_DIR/sunxi-compile.sh" all
           else
-            error "sunxi/sunxi-build-uboot.sh not found or not executable"
+            error "sunxi-compile.sh not found or not executable"
           fi
           ;;
         *)
@@ -418,10 +418,10 @@ main() {
           "$BASE_DIR/rk-compile.sh" "$BUILD_OPTION"
           ;;
         sunxi)
-          if [ -x "$BASE_DIR/sunxi/sunxi-build-uboot.sh" ]; then
-            "$BASE_DIR/sunxi/sunxi-build-uboot.sh" "$BUILD_OPTION"
+          if [ -x "$BASE_DIR/sunxi-compile.sh" ]; then
+            "$BASE_DIR/sunxi-compile.sh" "$BUILD_OPTION"
           else
-            error "sunxi/sunxi-build-uboot.sh not found or not executable"
+            error "sunxi-compile.sh not found or not executable"
           fi
           ;;
         *)
