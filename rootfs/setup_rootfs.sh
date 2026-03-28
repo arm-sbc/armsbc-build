@@ -132,21 +132,40 @@ prepare_rootfs() {
   sudo chmod 440 "$ROOTFS_DIR/etc/sudoers" 2>/dev/null || true
   sudo chown -R root:root "$ROOTFS_DIR/etc/sudoers.d" 2>/dev/null || true
 
-  info "Sudo permissions and ownership fixed for rootfs."
+   info "Sudo permissions and ownership fixed for rootfs."
 
   if [ "$ARCH" = "arm64" ]; then
-    QEMU_BIN="/usr/bin/qemu-aarch64-static"
+    if [ -x /usr/bin/qemu-aarch64-static ]; then
+      QEMU_BIN="/usr/bin/qemu-aarch64-static"
+    elif [ -x /usr/bin/qemu-aarch64 ]; then
+      QEMU_BIN="/usr/bin/qemu-aarch64"
+    else
+      error "Missing QEMU binary for arm64: neither /usr/bin/qemu-aarch64-static nor /usr/bin/qemu-aarch64 found"
+    fi
+    QEMU_DEST="qemu-aarch64-static"
+
   elif [ "$ARCH" = "arm" ]; then
-    QEMU_BIN="/usr/bin/qemu-arm-static"
+    if [ -x /usr/bin/qemu-arm-static ]; then
+      QEMU_BIN="/usr/bin/qemu-arm-static"
+    elif [ -x /usr/bin/qemu-arm ]; then
+      QEMU_BIN="/usr/bin/qemu-arm"
+    else
+      error "Missing QEMU binary for arm: neither /usr/bin/qemu-arm-static nor /usr/bin/qemu-arm found"
+    fi
+    QEMU_DEST="qemu-arm-static"
+
   else
-    error "Unsupported ARCH for chroot password setup"
+    error "Unsupported ARCH for chroot password setup: $ARCH"
   fi
 
-  if [ ! -f "$QEMU_BIN" ]; then
-    error "Missing QEMU binary: $QEMU_BIN"
-  fi
+  info "Using host QEMU binary: $QEMU_BIN"
 
-  sudo cp "$QEMU_BIN" "$ROOTFS_DIR/usr/bin/"
+  sudo mkdir -p "$ROOTFS_DIR/usr/bin"
+  sudo install -m 0755 "$QEMU_BIN" "$ROOTFS_DIR/usr/bin/$QEMU_DEST" || {
+    error "Failed to copy QEMU into rootfs"
+  }
+
+  info "Copied QEMU into rootfs as: $ROOTFS_DIR/usr/bin/$QEMU_DEST"
 
   info "Chrooting to set root and ubuntu passwords..."
   sudo chroot "$ROOTFS_DIR" /bin/bash -c "\
@@ -156,8 +175,7 @@ prepare_rootfs() {
       echo 'Please set password for user ubuntu:' && \
       passwd ubuntu; \
     fi"
-    
-    
+
   prompt "Do you want to install desktop environment and utilities inside the rootfs? [y/N]"
   read -r DESKTOP_YN
   if [[ "$DESKTOP_YN" =~ ^[Yy]$ ]]; then

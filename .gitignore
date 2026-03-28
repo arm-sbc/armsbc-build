@@ -31,3 +31,5 @@ rk-tools/build/
 .DS_Store
 trusted-firmware-a/
 u-boot/
+linux-*/
+OUT/

@@ -60,10 +60,24 @@ info "Using output dir: $OUTPUT_DIR"
 install_deps() {
   section_start "Install dependencies"
 
+  # Detect host OS
+  if [ ! -f /etc/os-release ]; then
+    error "Cannot detect host OS: /etc/os-release not found"
+    section_end "Install dependencies"
+    return 1
+  fi
+
+  . /etc/os-release
+  HOST_OS="${ID:-unknown}"
+  HOST_VERSION_ID="${VERSION_ID:-unknown}"
+  HOST_PRETTY_NAME="${PRETTY_NAME:-Unknown OS}"
+
+  info "Detected host OS: ${HOST_PRETTY_NAME}"
+
+  # Base packages (common for all supported Ubuntu versions)
   REQUIRED_PACKAGES=(
     git wget curl bc build-essential
     device-tree-compiler
-    qemu-user qemu-user-static binfmt-support
     debootstrap xz-utils
     swig bison flex
     gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
@@ -72,8 +86,63 @@ install_deps() {
     genext2fs uuid-dev
     picocom
     libgnutls28-dev
+    qemu-user
+    binfmt-support
   )
 
+  # Helper: check if package exists in repo
+  package_available() {
+    apt-cache show "$1" >/dev/null 2>&1
+  }
+
+  # Select correct QEMU support package
+  QEMU_SUPPORT_PKG=""
+
+  if [ "$HOST_OS" = "ubuntu" ]; then
+    case "$HOST_VERSION_ID" in
+      24.04)
+        info "Using Ubuntu 24.04 dependency logic"
+
+        if package_available qemu-user-static; then
+          QEMU_SUPPORT_PKG="qemu-user-static"
+        elif package_available qemu-user-binfmt; then
+          warn "qemu-user-static not available, falling back to qemu-user-binfmt"
+          QEMU_SUPPORT_PKG="qemu-user-binfmt"
+        else
+          error "No suitable QEMU support package found (expected qemu-user-static or qemu-user-binfmt)"
+          section_end "Install dependencies"
+          return 1
+        fi
+        ;;
+      26.04)
+        info "Using Ubuntu 26.04 dependency logic"
+
+        if package_available qemu-user-binfmt; then
+          QEMU_SUPPORT_PKG="qemu-user-binfmt"
+        elif package_available qemu-user-static; then
+          warn "Using legacy qemu-user-static on Ubuntu 26"
+          QEMU_SUPPORT_PKG="qemu-user-static"
+        else
+          error "No suitable QEMU support package found (expected qemu-user-binfmt or qemu-user-static)"
+          section_end "Install dependencies"
+          return 1
+        fi
+        ;;
+      *)
+        error "Unsupported Ubuntu version: ${HOST_VERSION_ID} (supported: 24.04, 26.04)"
+        section_end "Install dependencies"
+        return 1
+        ;;
+    esac
+  else
+    error "Unsupported host OS: ${HOST_PRETTY_NAME} (only Ubuntu 24/26 supported)"
+    section_end "Install dependencies"
+    return 1
+  fi
+
+  REQUIRED_PACKAGES+=("$QEMU_SUPPORT_PKG")
+
+  # Check missing packages
   MISSING_PACKAGES=()
   for pkg in "${REQUIRED_PACKAGES[@]}"; do
     dpkg -s "$pkg" >/dev/null 2>&1 || MISSING_PACKAGES+=("$pkg")
@@ -81,8 +150,19 @@ install_deps() {
 
   if [ ${#MISSING_PACKAGES[@]} -gt 0 ]; then
     info "Installing missing packages: ${MISSING_PACKAGES[*]}"
-    sudo apt-get update -y >/dev/null
-    sudo apt-get install -y "${MISSING_PACKAGES[@]}" >/dev/null || error "Failed to install required dependencies"
+
+    sudo apt-get update -y >/dev/null || {
+      error "Failed to update package lists"
+      section_end "Install dependencies"
+      return 1
+    }
+
+    sudo apt-get install -y "${MISSING_PACKAGES[@]}" >/dev/null || {
+      error "Failed to install required dependencies"
+      section_end "Install dependencies"
+      return 1
+    }
+
     success "All required system packages installed"
   else
     info "All required system dependencies already installed"
