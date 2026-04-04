@@ -1,0 +1,34 @@
+--- a/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi	2026-03-30 02:40:00.000000000 +0400
++++ b/arch/arm64/boot/dts/allwinner/sun55i-a523.dtsi	2026-04-04 12:44:35.640724111 +0400
+@@ -189,7 +189,7 @@
+ 				drive-strength = <40>;
+ 				bias-disable;
+ 			};
+-
++		
+ 			rgmii1_pins: rgmii1-pins {
+ 				pins = "PJ0", "PJ1", "PJ2", "PJ3", "PJ4",
+ 				       "PJ5", "PJ6", "PJ7", "PJ8", "PJ9",
+@@ -270,6 +270,22 @@
+ 				function = "uart1";
+ 				allwinner,pinmux = <2>;
+ 			};
++			
++			i2c0_pins_d: i2c0_pins_d {
++				pins = "PD22", "PD23";
++				function = "i2c0";
++				allwinner,pinmux = <6>;
++				drive-strength = <10>;
++				bias-pull-up;
++			};
++					
++			i2c1_pins_b_default: i2c1-b-default {
++        			pins = "PB4", "PB5";
++        			function = "i2c1";
++        			allwinner,pinmux = <6>;
++        			drive-strength = <10>;
++        			bias-pull-up;
++    			};
+ 		};
+ 
+ 		ccu: clock-controller@2001000 {

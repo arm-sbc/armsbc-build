@@ -1,0 +1,68 @@
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-sun55i.c	2026-03-30 02:40:00.000000000 +0400
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sun55i.c	2026-04-04 11:04:31.904801884 +0400
+@@ -108,6 +108,7 @@
+ 	struct stmmac_resources stmmac_res;
+ 	struct device *dev = &pdev->dev;
+ 	struct clk *clk;
++	struct clk *emac_25m_clk;
+ 	int ret;
+ 
+ 	ret = stmmac_get_platform_resources(pdev, &stmmac_res);
+@@ -130,6 +131,12 @@
+ 	if (IS_ERR(clk))
+ 		return dev_err_probe(dev, PTR_ERR(clk),
+ 				     "Failed to get or enable MBUS clock\n");
++	if (of_property_read_bool(pdev->dev.of_node,"allwinner,use-25m-clk")) {
++		emac_25m_clk = devm_clk_get_enabled(dev, "emac25m");
++		if (IS_ERR(emac_25m_clk))
++		return dev_err_probe(dev, PTR_ERR(emac_25m_clk),
++					"Failed to get or enable 25M PHY clock\n");
++	}				     
+ 
+ 	ret = devm_regulator_get_enable_optional(dev, "phy");
+ 	if (ret)
+ 	
+---
+
+--- a/drivers/net/ethernet/stmicro/stmmac/dwmac-sun8i.c	2026-03-30 02:40:00.000000000 +0400
++++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-sun8i.c	2026-04-04 13:14:55.785901816 +0400
+@@ -65,12 +65,14 @@
+  */
+ struct sunxi_priv_data {
+ 	struct clk *ephy_clk;
++	struct clk *emac_25m_clk;
+ 	struct regulator *regulator;
+ 	struct reset_control *rst_ephy;
+ 	const struct emac_variant *variant;
+ 	struct regmap_field *regmap_field;
+ 	bool internal_phy_powered;
+ 	bool use_internal_phy;
++	bool use_25m_clk;
+ 	void *mux_handle;
+ };
+ 
+@@ -576,6 +578,12 @@
+ 	struct net_device *ndev = dev_get_drvdata(dev);
+ 	struct sunxi_priv_data *gmac = priv;
+ 	int ret;
++	
++	if (gmac->use_25m_clk) {
++		gmac->emac_25m_clk = devm_clk_get_enabled(&pdev->dev, "emac25m");
++		if (IS_ERR(gmac->emac_25m_clk))
++			return PTR_ERR(gmac->emac_25m_clk);
++	}
+ 
+ 	if (gmac->regulator) {
+ 		ret = regulator_enable(gmac->regulator);
+@@ -1129,6 +1137,9 @@
+ 		dev_err(&pdev->dev, "Missing dwmac-sun8i variant\n");
+ 		return -EINVAL;
+ 	}
++	
++	if (of_property_read_bool(pdev->dev.of_node,"allwinner,use-25m-clk"))
++			gmac->use_25m_clk = true;
+ 
+ 	/* Optional regulator for PHY */
+ 	gmac->regulator = devm_regulator_get_optional(dev, "phy");
+
+---

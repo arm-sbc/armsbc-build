@@ -1,0 +1,642 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
+// Copyright (C) 2024 Arm Ltd.
+
+/dts-v1/;
+
+#include "sun55i-a523.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
+
+
+/ {
+	model = "ARM-SBC A527-PRO";
+	compatible = "armsbc,a527-pro", "allwinner,sun55i-t527";
+
+	aliases {
+		mmc0 = &mmc0;
+		mmc1 = &mmc1;
+		mmc2 = &mmc2;
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial2 = &uart2;
+		serial3 = &uart3;
+		serial4 = &uart4;
+		serial5 = &uart5;
+		serial6 = &uart6;
+		serial7 = &uart7;
+		i2c0	= &i2c0;
+		i2c1	= &i2c1;
+		i2c2	= &i2c2;
+		i2c3	= &i2c3;
+		i2c4	= &i2c4;
+		i2c5	= &i2c5;
+		i2c6  	= &r_i2c0;
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+	
+	leds {
+		compatible = "gpio-leds";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		
+		led@0 {
+				reg = <0>;
+				color = <LED_COLOR_ID_GREEN>;
+				function = LED_FUNCTION_LAN;
+				linux,default-trigger = "netdev";
+			};
+
+		led@1 {
+				reg = <1>;
+				color = <LED_COLOR_ID_AMBER>;
+				function = LED_FUNCTION_LAN;
+				linux,default-trigger = "netdev";
+			};
+	};
+	
+	iio-hwmon {
+		compatible = "iio-hwmon";
+		io-channels = <&axp717_adc 3>, /* vsys_v */
+			      <&axp717_adc 4>; /* pmic_temp */
+	};
+		
+	run-control {
+		compatible = "gpio-leds";
+		led-status {
+			label = "arm-sbc:led-status";
+			gpios = <&pio 1 8 GPIO_ACTIVE_HIGH>; /* PB8 */
+			default-state = "on";
+		};
+	};
+	
+	gpio_fan {
+		compatible = "gpio-fan";
+		gpios = <&pio 8 5 GPIO_ACTIVE_HIGH>; /* PI5*/
+		gpio-fan,speed-map = <0    0
+				      1000 1
+				      2000 2>;
+        	#cooling-cells = <2>;
+        	status = "okay";
+	};
+	
+	reg_vcc12v: vcc12v {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-12v";
+		regulator-min-microvolt = <12000000>;
+		regulator-max-microvolt = <12000000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+	
+	reg_vcc5v: vcc5v {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-5v";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+	
+	reg_vcc3v3: vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	vdd_5v_3v3: vdd-5v-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd-5v-3v3";
+		regulator-enable-ramp-delay = <1000>; 
+		gpios = <&r_pio 0 6 GPIO_ACTIVE_HIGH>; /* PL6 */
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	    };
+    
+	reg_vdd_4g: reg-vdd-4g {
+		compatible = "regulator-fixed";
+		regulator-name = "reg_vdd_4g";
+		regulator-enable-ramp-delay = <1000>;
+		gpios = <&pio 9 19 GPIO_ACTIVE_HIGH>; /* PJ19 */
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	    };
+	    
+	reg_usb_vbus: reg-usb-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "reg_usb_vbus";
+		regulator-enable-ramp-delay = <1000>;
+		gpios = <&r_pio 0 7 GPIO_ACTIVE_HIGH>; /* PL7 */
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	    };
+	    
+	reg_usb_otg: reg-usb-otg {
+		compatible = "regulator-fixed";
+		regulator-name = "reg_usb_otg";
+		regulator-enable-ramp-delay = <1000>;
+		gpios = <&r_pio 0 11 GPIO_ACTIVE_HIGH>; /* PL11 */
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	    };
+    
+    	vcc_io_1v8: fixed-regulator-1v8 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-io-1v8";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+	};
+	    
+	vcc1v8_pcie: vcc1v8-pcie {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc1v8-pcie";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+
+	vcc3v3_pcie: vcc3v3-pcie {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3-pcie";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+		regulator-boot-on;
+	};
+	
+	reg_vcc_wifi: reg-vcc-wifi {
+		compatible = "regulator-fixed";
+		regulator-name = "reg_vcc_wifi";
+		regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+		regulator-enable-ramp-delay = <1000>;
+		gpios = <&r_pio 1 1 GPIO_ACTIVE_HIGH>; /* PM1 */
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+};
+
+&cpu0 {
+	cpu-supply = <&reg_dcdc1>;
+};
+
+&cpu1 {
+	cpu-supply = <&reg_dcdc1>;
+};
+
+&cpu2 {
+	cpu-supply = <&reg_dcdc1>;
+};
+
+&cpu3 {
+	cpu-supply = <&reg_dcdc1>;
+};
+
+&cpu4 {
+	cpu-supply = <&reg_dcdc1_323>;
+};
+
+&cpu5 {
+	cpu-supply = <&reg_dcdc1_323>;
+};
+
+&cpu6 {
+	cpu-supply = <&reg_dcdc1_323>;
+};
+
+&cpu7 {
+	cpu-supply = <&reg_dcdc1_323>;
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&ehci1 {
+	status = "okay";
+};
+
+&gmac0 {
+	phy-mode = "rgmii-id";
+	phy-handle = <&ext_rgmii0_phy>;
+	phy-supply = <&reg_cldo3>;
+	allwinner,tx-delay-ps = <100>;
+	allwinner,rx-delay-ps = <300>;
+	allwinner,use-25m-clk;
+	pinctrl-0 = <&rgmii0_pins>, <&rgmii0_25m_pin>;
+	clocks = <&ccu CLK_BUS_EMAC0>, <&ccu CLK_EMAC0_25M>;
+	clock-names = "stmmaceth", "emac25m";
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&mdio0 {
+	ext_rgmii0_phy: ethernet-phy@1 {
+		compatible = "ethernet-phy-id4f51.e91a", "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+		reset-gpios = <&pio 7 8 GPIO_ACTIVE_LOW>;
+        	reset-assert-us = <10000>;
+		reset-deassert-us = <150000>;
+		motorcomm,auto-sleep-disabled;
+		motorcomm,keep-pll-enabled;
+		motorcomm,clk-out-frequency-hz = <25000000>;
+	};
+};
+
+&gmac1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&rgmii1_pins>, <&rgmii1_25m_pin>;
+	clocks = <&ccu CLK_BUS_EMAC1>, <&ccu CLK_MBUS_EMAC1>,<&ccu CLK_EMAC1_25M>;
+	clock-names = "stmmaceth", "mbus", "emac25m";
+	phy-mode = "rgmii-id";
+	phy-handle = <&ext_rgmii1_phy>;
+	phy-supply = <&reg_cldo3>;
+	allwinner,tx-delay-ps = <100>;
+	allwinner,rx-delay-ps = <300>;
+	allwinner,use-25m-clk;
+	status = "okay";
+};
+
+&mdio1 {
+	ext_rgmii1_phy: ethernet-phy@1 {
+		compatible = "ethernet-phy-id4f51.e91a", "ethernet-phy-ieee802.3-c22";
+		reg = <1>;
+		reset-gpios = <&pio 1 12 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <10000>;
+		reset-deassert-us = <150000>;
+		motorcomm,auto-sleep-disabled;
+		motorcomm,keep-pll-enabled;
+		motorcomm,clk-out-frequency-hz = <25000000>;
+	};
+};
+
+&pio {
+
+	rgmii0_25m_pin: rgmii0-25m-pin {
+		pins = "PH13";
+		allwinner,pinmux = <5>;
+		function = "gmac0";
+		drive-strength = <40>;
+		bias-disable;
+	};
+	
+	rgmii1_25m_pin: rgmii1-25m-pin {
+		pins = "PJ10";
+		allwinner,pinmux = <5>;
+		function = "gmac1";
+		drive-strength = <40>;
+		bias-disable;
+	};
+};
+
+&gpu {
+	mali-supply = <&reg_dcdc2>;
+	status = "okay";
+};
+
+&mmc0 {
+	vmmc-supply = <&reg_cldo3>;
+	cd-gpios = <&pio 5 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>; /* PF6 */
+	bus-width = <4>;
+	status = "okay";
+};
+
+&mmc1 {
+	pinctrl-names = "default";
+	bus-width = <4>;
+	no-mmc;
+    	no-sd;
+    	cap-sd-highspeed;
+	non-removable;
+	vmmc-supply = <&reg_vcc_wifi>;
+	vqmmc-supply = <&reg_bldo1>;
+	max-frequency = <25000000>;
+	status = "okay";
+	keep-power-in-suspend;
+    	enable-sdio-wakeup;
+		
+	brcmf: wifi@1 {
+		compatible = "brcm,bcm43752-fmac";
+		reg = <1>;
+		interrupt-parent = <&r_pio>;		
+		interrupts = <1 0 IRQ_TYPE_LEVEL_HIGH>; /* PM0 */
+		interrupt-names = "host-wake";
+		clocks = <&hym8563>;
+		clock-names = "lpo";
+		depends-on = <&hym8563>;
+	};
+};
+
+&mmc2 {
+	vmmc-supply = <&reg_cldo3>;
+	vqmmc-supply = <&reg_cldo1>;
+	max-frequency = <150000000>;
+	bus-width = <8>;
+	non-removable;
+	cap-mmc-hw-reset;
+	mmc-ddr-1_8v;
+	mmc-hs200-1_8v;
+	status = "okay";
+};
+
+&ohci0 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+&pio {
+	vcc-pb-supply = <&reg_cldo3>;	
+	vcc-pc-supply = <&reg_cldo1>;
+	vcc-pd-supply = <&reg_dcdc4>;
+	vcc-pe-supply = <&reg_dcdc4>;
+	vcc-pf-supply = <&reg_cldo3>;	
+	vcc-pg-supply = <&reg_bldo1>;
+	vcc-ph-supply = <&reg_cldo3>;	
+	vcc-pi-supply = <&reg_dcdc4>;
+	vcc-pj-supply = <&reg_dcdc4>;
+	vcc-pk-supply = <&reg_bldo3>;
+};
+
+&i2c0 {
+	status = "okay";
+	pinctrl-0 = <&i2c0_pins_d>;
+	pinctrl-names = "default";
+	
+	hym8563: rtc@51 {
+        compatible = "haoyu,hym8563";
+        //vcc-supply = <&reg_rtcldo>;
+        reg = <0x51>;
+        #clock-cells = <0>;
+        clock-output-names = "ext-rtc-32k";
+        status = "okay";
+	};
+};
+
+&r_i2c0 {
+	status = "okay";
+
+	axp717: pmic@35 {
+		compatible = "x-powers,axp717";
+		reg = <0x35>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		interrupt-parent = <&nmi_intc>;
+		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+
+		vin1-supply = <&reg_vcc5v>;
+		vin2-supply = <&reg_vcc5v>;
+		vin3-supply = <&reg_vcc5v>;
+		vin4-supply = <&reg_vcc5v>;
+		aldoin-supply = <&reg_vcc5v>;
+		bldoin-supply = <&reg_vcc5v>;
+		cldoin-supply = <&reg_vcc5v>;
+
+		axp717_adc: adc {
+				compatible = "x-powers,axp717-adc";
+				#io-channel-cells = <1>;
+		};
+
+		battery-power {
+			compatible = "x-powers,axp717-battery-power-supply";
+			/* charger mode design but has no battery terminal */
+			status = "disabled";
+		};
+		
+		regulators {
+			/* Supplies the "little" cluster (1.4 GHz cores) */
+			reg_dcdc1: dcdc1 {
+				regulator-always-on;
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <1160000>;
+				regulator-name = "vdd-cpul";
+			};
+
+			reg_dcdc2: dcdc2 {
+				regulator-always-on;
+				regulator-min-microvolt = <920000>;
+				regulator-max-microvolt = <920000>;
+				regulator-name = "vdd-gpu-sys";
+			};
+
+			reg_dcdc3: dcdc3 {
+				regulator-always-on;
+				regulator-min-microvolt = <1160000>;
+				regulator-max-microvolt = <1160000>;
+				regulator-name = "vdd-dram";
+			};
+
+			reg_dcdc4: dcdc4 {
+				regulator-always-on;
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-name = "vdd-io";
+			};
+			
+			reg_rtcldo: rtcldo {
+				/* RTC_LDO is a fixed, always-on regulator */
+				regulator-name = "axp2202-rtcldo";
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-boot-on;
+				regulator-always-on;
+            };
+
+			reg_aldo1: aldo1 {
+				regulator-name = "axp2202-aldo1";
+                		regulator-min-microvolt = <500000>;
+                		regulator-max-microvolt = <3500000>;
+                		regulator-enable-ramp-delay = <1000>;
+			};
+
+			reg_aldo2: aldo2 {
+			    	regulator-name = "axp2202-aldo2";
+                		regulator-min-microvolt = <500000>;
+                		regulator-max-microvolt = <3500000>;
+                		regulator-enable-ramp-delay = <1000>;
+			};
+
+			reg_aldo3: aldo3 {
+				/* supplies the I2C pins for this PMIC */
+				regulator-always-on;
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-name = "vcc-pl-pm";
+			};
+
+			reg_aldo4: aldo4 {
+				regulator-always-on;
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-pll-dxco-avcc";
+			};
+
+			reg_bldo1: bldo1 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-pg-wifi-lvds";
+			};
+
+			reg_bldo2: bldo2 {
+				regulator-always-on;
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-dram-1v8";
+			};
+
+			reg_bldo3: bldo3 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-cvp-pk-vid1v8";
+			};
+
+			reg_bldo4: bldo4 {
+				regulator-name = "axp2202-bldo4";
+                		regulator-min-microvolt = <500000>;
+                		regulator-max-microvolt = <3500000>;
+                		regulator-enable-ramp-delay = <1000>;
+			};
+
+			reg_cldo1: cldo1 {
+				regulator-min-microvolt = <1900000>;
+				regulator-max-microvolt = <1900000>;
+				regulator-name = "vcc-pc";
+			};
+
+			reg_cldo2: cldo2 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-efuse";
+			};
+
+			reg_cldo3: cldo3 {
+				regulator-min-microvolt = <3400000>;
+				regulator-max-microvolt = <3400000>;
+				regulator-name = "vcc-io-mmc-spi-ana";
+			};
+
+			reg_cldo4: cldo4 {
+			    	regulator-name = "axp2202-cldo4";
+                	    	regulator-min-microvolt = <500000>;
+                		regulator-max-microvolt = <3500000>;
+                		regulator-enable-ramp-delay = <1000>;
+			};
+
+			reg_cpusldo: cpusldo {
+				/* supplies the management core */
+				regulator-always-on;
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <900000>;
+				regulator-name = "vdd-cpus";
+			};
+		};
+		
+		usb-power {
+			compatible = "x-powers,axp717-usb-power-supply";
+		};
+	};
+	
+	axp323: pmic@36 {
+		compatible = "x-powers,axp323";
+		reg = <0x36>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		interrupt-parent = <&nmi_intc>;
+		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
+		status = "okay";
+
+		vin1-supply = <&reg_vcc5v>;
+		vin2-supply = <&reg_vcc5v>;
+		vin3-supply = <&reg_vcc5v>;
+
+		regulators {
+			aldo1 {
+				regulator-min-microvolt = <1800000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-name = "vcc-mipi-dsi";
+			};
+
+			dldo1 {
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-name = "vcc-wifi";
+			};
+
+			/* Supplies the "big" cluster (1.8 GHz cores) */
+			reg_dcdc1_323: dcdc1 {
+				regulator-always-on;
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <1160000>;
+				regulator-name = "vdd-cpub";
+			};
+
+			/* DCDC2 is polyphased with DCDC1 */
+
+			/* RISC-V management core supply */
+			reg_dcdc3_323: dcdc3 {
+				regulator-always-on;
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <900000>;
+				regulator-name = "vdd-dnr";
+			};
+		};
+	};
+};
+
+&r_pio {
+	status = "okay";
+	vcc-pm-supply = <&vcc_io_1v8>;
+	vcc-pl-supply = <&vcc_io_1v8>;
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pb_pins>;
+	status = "okay";
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pins>, <&uart1_rts_cts_pins>;
+	uart-has-rtscts;
+	status = "okay";
+
+	bluetooth {
+		compatible = "brcm,bcm4345c5";
+		clocks = <&hym8563>;
+		clock-names = "lpo";
+		vbat-supply = <&reg_aldo3>;
+		vddio-supply = <&reg_bldo1>;
+		device-wakeup-gpios = <&r_pio 1 3 GPIO_ACTIVE_HIGH>; /* PM3 */
+		host-wakeup-gpios = <&r_pio 1 4 GPIO_ACTIVE_HIGH>; /* PM4 */
+		shutdown-gpios = <&r_pio 1 2 GPIO_ACTIVE_HIGH>; /* PM2 */
+	};
+};
+
+&usb_otg {
+	dr_mode = "peripheral";
+	status = "okay";
+};
+
+&usbphy {
+	usb0_vbus-supply = <&reg_usb_vbus>;
+	usb0_vbus_det-gpios = <&r_pio 1 5 GPIO_ACTIVE_HIGH>; /* PM5*/
+	status = "okay";
+};
