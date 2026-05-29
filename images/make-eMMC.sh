@@ -73,9 +73,10 @@ install_armbian_firmware() {
     info "Updating cached Armbian firmware ..."
     (
       cd "$fw_dir" || exit 0
-      remote_head=$(git remote show origin 2>/dev/null | awk '/HEAD branch/ {print $NF}')
+      remote_head=$(git -c safe.directory="$fw_dir" remote show origin 2>/dev/null | awk '/HEAD branch/ {print $NF}')
       remote_head=${remote_head:-main}
-      git fetch --depth=1 origin "$remote_head" && git reset --hard "origin/$remote_head"
+      git -c safe.directory="$fw_dir" fetch --depth=1 origin "$remote_head" && \
+      git -c safe.directory="$fw_dir" reset --hard "origin/$remote_head"
     ) || {
       warn "Firmware cache update failed – using existing cache"
     }
@@ -163,6 +164,7 @@ BOOT_MERGER="$RK_BIN_DIR/tools/boot_merger"
 # ensure loader
 # ---------------------------------------------------------------------------
 LOADER_BIN="$OUT_DIR/${CHIP}_loader.bin"
+LOADER_BASENAME="$(basename "$LOADER_BIN")"
 
 if [ ! -f "$LOADER_BIN" ]; then
   info "Loader not found in OUT → generating from rkbin ..."
@@ -180,6 +182,8 @@ if [ ! -f "$LOADER_BIN" ]; then
   info "Loader generated and copied as: $OUT_DIR/$LOADER_BASENAME"
 else
   info "Using existing loader: $LOADER_BIN"
+  VERSIONED_LOADER=$(find "$OUT_DIR" -maxdepth 1 -type f -name "${CHIP}*loader*.bin" ! -name "$(basename "$LOADER_BIN")" | sort -V | tail -n1)
+  [ -n "$VERSIONED_LOADER" ] && LOADER_BASENAME="$(basename "$VERSIONED_LOADER")"
 fi
 
 # ---------------------------------------------------------------------------
@@ -213,16 +217,19 @@ mkdir -p "$EXTLINUX_DIR"
 
 case "$CHIP" in
   rk3588|rk3568|rk3566|rk3399)
-    CONSOLE="ttyS2"; BAUD="1500000" ;;
+    BOOT_CONSOLE="ttyS2"; BOOT_BAUD="1500000" ;;
+  rk3562)
+    BOOT_CONSOLE="ttyS0"; BOOT_BAUD="1500000" ;;
   *)
-    CONSOLE="ttyS2"; BAUD="1500000" ;;
+    BOOT_CONSOLE="ttyS2"; BOOT_BAUD="1500000" ;;
 esac
+info "Using boot console: $BOOT_CONSOLE,$BOOT_BAUD"
 
 cat > "$EXTLINUX_DIR/extlinux.conf" <<EOF
 LABEL Linux
     KERNEL /Image
     FDT /$(basename "$DTB_PATH")
-    APPEND console=$CONSOLE,$BAUD root=/dev/mmcblk0p4 rw rootwait
+    APPEND console=$BOOT_CONSOLE,$BOOT_BAUD root=/dev/mmcblk0p4 rw rootwait
 EOF
 
 info "boot/ populated."
@@ -282,8 +289,15 @@ RAW_IMG="$OUT_DIR/update-emmc.raw.img"
 info "Copying parameter.txt into OUT_DIR ..."
 cp "$PARAMETER_FILE" "$OUT_DIR/parameter.txt"
 
+OUT_PACKAGE_FILE="$OUT_DIR/package-file"
+info "Preparing package-file with loader: $LOADER_BASENAME"
+awk -v loader="$LOADER_BASENAME" '
+  $1 == "bootloader" { print $1 "\t" loader; next }
+  { print }
+' "$PACKAGE_FILE" > "$OUT_PACKAGE_FILE"
+
 info "Packing raw image with afptool ..."
-"$AFPTOOL" -pack "$OUT_DIR" "$RAW_IMG" "$PACKAGE_FILE"
+"$AFPTOOL" -pack "$OUT_DIR" "$RAW_IMG" "$OUT_PACKAGE_FILE"
 
 # ---------------------------------------------------------------------------
 # make final update img
@@ -297,4 +311,3 @@ info "Creating final update image with rkImageMaker ..."
 [ -f "$OUT_UPDATE_IMG" ] && success "update-eMMC image created: $OUT_UPDATE_IMG" || error "Failed to create final eMMC image"
 
 exit 0
-

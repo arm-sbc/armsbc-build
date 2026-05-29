@@ -48,7 +48,14 @@ sudo chroot "$ROOTFS_DIR" /debootstrap/debootstrap --second-stage
 section_end "debootstrap stage2 (chroot)"
 
 section_start "Base config"
-echo "armsbc-$BOARD" | sudo tee "$ROOTFS_DIR/etc/hostname" >/dev/null
+ROOTFS_HOSTNAME=$(printf '%s' "${CHIP:-$BOARD}" \
+  | tr '[:upper:]_' '[:lower:]-' \
+  | sed -E 's/[^a-z0-9-]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')
+[ -n "$ROOTFS_HOSTNAME" ] || ROOTFS_HOSTNAME="armsbc"
+echo "$ROOTFS_HOSTNAME" | sudo tee "$ROOTFS_DIR/etc/hostname" >/dev/null
+sudo touch "$ROOTFS_DIR/etc/hosts"
+sudo sed -i '/^[[:space:]]*127\.0\.1\.1[[:space:]]/d' "$ROOTFS_DIR/etc/hosts"
+echo "127.0.1.1   $ROOTFS_HOSTNAME" | sudo tee -a "$ROOTFS_DIR/etc/hosts" >/dev/null
 
 if [[ "$DISTRO" == "bookworm" ]]; then
   cat <<'EOF' | sudo tee "$ROOTFS_DIR/etc/apt/sources.list" >/dev/null
@@ -102,4 +109,3 @@ echo "$DISTRO" | sudo tee "$ROOTFS_DIR/.armsbc_distro" >/dev/null
 section_end "Create rootfs ($DISTRO, $ARCH) for $BOARD ($CHIP)"
 script_end
 success "rk-build-rootfs.sh completed → $ROOTFS_DIR"
-

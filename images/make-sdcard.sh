@@ -67,10 +67,10 @@ install_armbian_firmware() {
     (
       cd "$fw_dir" || exit 0
       local remote_head
-      remote_head=$(git remote show origin 2>/dev/null | awk '/HEAD branch/ {print $NF}')
+      remote_head=$(git -c safe.directory="$fw_dir" remote show origin 2>/dev/null | awk '/HEAD branch/ {print $NF}')
       remote_head=${remote_head:-main}
-      git fetch --depth=1 origin "$remote_head" && \
-      git reset --hard "origin/$remote_head"
+      git -c safe.directory="$fw_dir" fetch --depth=1 origin "$remote_head" && \
+      git -c safe.directory="$fw_dir" reset --hard "origin/$remote_head"
     ) || {
       warn "Firmware cache update failed – using existing cache"
     }
@@ -306,6 +306,7 @@ mkdir -p "$EXTLINUX_DIR"
 
 case "$CHIP" in
   rk3588|rk3568|rk3566|rk3399) CONSOLE="ttyS2"; BAUD="1500000" ;;
+  rk3562)                      CONSOLE="ttyS0"; BAUD="1500000" ;;
   *)                           CONSOLE="ttyS0"; BAUD="115200"  ;;
 esac
 
@@ -331,4 +332,3 @@ umount "$MOUNT_PT"
 losetup -d "$LOOP_DEV"
 success "SD image created: $IMAGE_NAME"
 exit 0
-

@@ -95,17 +95,21 @@ nameserver 8.8.4.4
 EOF
 
 # --- Run inside chroot ---
-# pass BOARD, VERSION, DESKTOP_FLAVOR through env
-sudo BOARD="$BOARD" VERSION="$VERSION" DESKTOP_FLAVOR="$DESKTOP_FLAVOR" chroot "$ROOTFS_DIR" /bin/bash -s <<'CHROOT_EOF'
+# pass BOARD, CHIP, VERSION, DESKTOP_FLAVOR through env
+sudo BOARD="$BOARD" CHIP="$CHIP" VERSION="$VERSION" DESKTOP_FLAVOR="$DESKTOP_FLAVOR" chroot "$ROOTFS_DIR" /bin/bash -s <<'CHROOT_EOF'
 set -e
 
-echo "[INFO] In chroot: VERSION=${VERSION:-n/a} BOARD=${BOARD:-n/a} DESKTOP_FLAVOR=${DESKTOP_FLAVOR:-auto}"
+echo "[INFO] In chroot: VERSION=${VERSION:-n/a} BOARD=${BOARD:-n/a} CHIP=${CHIP:-n/a} DESKTOP_FLAVOR=${DESKTOP_FLAVOR:-auto}"
 
 # hostname
-echo "armsbc" > /etc/hostname
-if ! grep -q "127.0.1.1" /etc/hosts; then
-  echo "127.0.1.1   armsbc" >> /etc/hosts
-fi
+HOSTNAME_VALUE="${CHIP:-$BOARD}"
+HOSTNAME_VALUE="$(printf '%s' "$HOSTNAME_VALUE" | tr '[:upper:]_' '[:lower:]-' | sed -E 's/[^a-z0-9-]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')"
+[ -n "$HOSTNAME_VALUE" ] || HOSTNAME_VALUE="armsbc"
+echo "$HOSTNAME_VALUE" > /etc/hostname
+touch /etc/hosts
+grep -qE '^[[:space:]]*127\.0\.0\.1[[:space:]]+localhost([[:space:]]|$)' /etc/hosts || echo "127.0.0.1   localhost" >> /etc/hosts
+sed -i '/^[[:space:]]*127\.0\.1\.1[[:space:]]/d' /etc/hosts
+echo "127.0.1.1   $HOSTNAME_VALUE" >> /etc/hosts
 
 apt-get update -y
 apt-get install -y locales
@@ -221,4 +225,3 @@ if [ -n "$BUILD_START_TIME" ]; then
 fi
 
 success "Post-installation complete."
-

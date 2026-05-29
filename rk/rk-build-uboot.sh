@@ -16,6 +16,11 @@ SCRIPT_NAME="$(basename "$0")"
 UBOOT_DIR="$BASE_DIR/u-boot"
 PATCH_DIR="$BASE_DIR/patches/rockchip/uboot"
 
+pick_latest_blob() {
+  local pattern="$1"
+  compgen -G "$pattern" | sort -V | tail -n1
+}
+
 section_start "Prepare U-Boot tree"
 
 if [ ! -d "$UBOOT_DIR/.git" ]; then
@@ -66,9 +71,9 @@ make distclean >/dev/null 2>&1 || true
 
 # TPL and BL31
 case "$CHIP" in
-  rk3566|rk3568|rk3576|rk3588)
+  rk3562|rk3566|rk3568|rk3576|rk3588)
     TPL_DIR="$BASE_DIR/rkbin/bin/rk35"
-    ROCKCHIP_TPL="$(ls "$TPL_DIR"/${CHIP}_ddr_*MHz_v*.bin 2>/dev/null | sort | tail -n1)"
+    ROCKCHIP_TPL="$(pick_latest_blob "$TPL_DIR/${CHIP}_ddr_*MHz_v*.bin")"
     [ -n "$ROCKCHIP_TPL" ] && export ROCKCHIP_TPL && info "Using ROCKCHIP_TPL: $ROCKCHIP_TPL"
     ;;
 esac
@@ -77,9 +82,10 @@ if [ "$ARCH" = "arm64" ]; then
   case "$CHIP" in
     rk3588) BL31_CAND=("$BASE_DIR"/rkbin/bin/rk35/rk3588_bl31_v*.elf) ;;
     rk3576) BL31_CAND=("$BASE_DIR"/rkbin/bin/rk35/rk3576_bl31_v*.elf) ;;
+    rk3562) BL31_CAND=("$BASE_DIR"/rkbin/bin/rk35/rk3562_bl31_v*.elf) ;;
     rk3568|rk3566) BL31_CAND=("$BASE_DIR"/rkbin/bin/rk35/rk3568_bl31_v*.elf) ;;
   esac
-  BL31="$(printf '%s\n' "${BL31_CAND[@]}" 2>/dev/null | sort -V | tail -n1)"
+  BL31="$(pick_latest_blob "${BL31_CAND[0]:-}")"
   [ -z "$BL31" ] && error "BL31 not found in rkbin for $CHIP"
   export BL31
   info "Using BL31: $BL31"
@@ -107,4 +113,3 @@ section_end "Build U-Boot"
 
 script_end
 success "U-Boot build for $BOARD completed → $OUTPUT_DIR"
-

@@ -77,6 +77,32 @@ debug "OUTPUT_DIR=${OUTPUT_DIR:-undefined}"
 
 info "Starting root filesystem creation for Board: $BOARD, Architecture: $ARCH, Version: $VERSION"
 
+rootfs_hostname() {
+  local name="${CHIP:-$BOARD}"
+  name=$(printf '%s' "$name" \
+    | tr '[:upper:]_' '[:lower:]-' \
+    | sed -E 's/[^a-z0-9-]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')
+  [ -n "$name" ] || name="armsbc"
+  printf '%s\n' "$name"
+}
+
+configure_rootfs_hostname() {
+  local rootfs_dir="$1"
+  local hostname
+  hostname="$(rootfs_hostname)"
+
+  info "Setting rootfs hostname: $hostname"
+  echo "$hostname" | sudo tee "$rootfs_dir/etc/hostname" >/dev/null
+
+  sudo touch "$rootfs_dir/etc/hosts"
+  if ! sudo grep -qE '^[[:space:]]*127\.0\.0\.1[[:space:]]+localhost([[:space:]]|$)' "$rootfs_dir/etc/hosts"; then
+    echo "127.0.0.1   localhost" | sudo tee -a "$rootfs_dir/etc/hosts" >/dev/null
+  fi
+
+  sudo sed -i '/^[[:space:]]*127\.0\.1\.1[[:space:]]/d' "$rootfs_dir/etc/hosts"
+  echo "127.0.1.1   $hostname" | sudo tee -a "$rootfs_dir/etc/hosts" >/dev/null
+}
+
 # Check for sudo access
 info "Checking for sudo access..."
 if ! sudo -v; then
@@ -123,6 +149,7 @@ prepare_rootfs() {
   tar --numeric-owner -xf "$IMAGES_DIR/rootfs.tar.xz" -C "$ROOTFS_DIR" || error "Extraction failed."
 
   info "Root filesystem extracted to: $ROOTFS_DIR"
+  configure_rootfs_hostname "$ROOTFS_DIR"
   
   info "Fixing sudo ownership and permissions..."
   sudo chown root:root "$ROOTFS_DIR/usr/bin/sudo" 2>/dev/null || true
@@ -202,6 +229,7 @@ create_fresh_rootfs() {
   sudo cp "$QEMU" "$FRESH_DIR/usr/bin/"
 
   sudo chroot "$FRESH_DIR" /debootstrap/debootstrap --second-stage
+  configure_rootfs_hostname "$FRESH_DIR"
 
   case "$ROOTFS_DISTRO" in
     ubuntu)
@@ -272,4 +300,3 @@ seconds=$((BUILD_DURATION % 60))
 success "RootFS setup completed in ${minutes}m ${seconds}s"
 info "Exiting script: $SCRIPT_NAME"
 exit 0
-
