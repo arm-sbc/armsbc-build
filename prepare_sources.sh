@@ -173,7 +173,7 @@ install_deps() {
 
 clean_for_all() {
   section_start "Clean board output"
-  rm -rf "$OUTPUT_DIR"/*
+  sudo rm -rf "$OUTPUT_DIR"/*
   section_end "Clean board output"
 }
 
@@ -288,4 +288,3 @@ esac
 
 script_end
 success "prepare_sources.sh completed (mode=$MODE, family=$CHIP_FAMILY, board=$BOARD)"
-

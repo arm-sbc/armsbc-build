@@ -120,9 +120,16 @@ LABEL Linux ARM-SBC
 EOF
 
 # Modules and firmware
-if [ -d "$OUT_DIR/lib/modules" ]; then
+MODULES_SRC=""
+if [ -d "$OUT_DIR/modules/lib/modules" ]; then
+  MODULES_SRC="$OUT_DIR/modules/lib/modules"
+elif [ -d "$OUT_DIR/lib/modules" ]; then
+  MODULES_SRC="$OUT_DIR/lib/modules"
+fi
+
+if [ -n "$MODULES_SRC" ]; then
   mkdir -p "$MOUNT_POINT/lib/modules"
-  cp -a "$OUT_DIR/lib/modules/"* "$MOUNT_POINT/lib/modules/"
+  cp -a "$MODULES_SRC/"* "$MOUNT_POINT/lib/modules/"
 fi
 
 if git clone --depth=1 https://github.com/armbian/firmware.git /tmp/armbian-firmware; then
@@ -141,4 +148,3 @@ success "eMMC image created successfully: $IMAGE_NAME"
 BUILD_END_TIME=$(date +%s)
 DURATION=$((BUILD_END_TIME - BUILD_START_TIME))
 log_internal INFO "Total build time: $((DURATION / 60))m $((DURATION % 60))s"
-

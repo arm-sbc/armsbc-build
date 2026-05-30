@@ -146,7 +146,7 @@ prepare_rootfs() {
   ls -lh "$IMAGES_DIR/rootfs.tar.xz"
   file "$IMAGES_DIR/rootfs.tar.xz"
   
-  tar --numeric-owner -xf "$IMAGES_DIR/rootfs.tar.xz" -C "$ROOTFS_DIR" || error "Extraction failed."
+  sudo tar --numeric-owner -xf "$IMAGES_DIR/rootfs.tar.xz" -C "$ROOTFS_DIR" || error "Extraction failed."
 
   info "Root filesystem extracted to: $ROOTFS_DIR"
   configure_rootfs_hostname "$ROOTFS_DIR"

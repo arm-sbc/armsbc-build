@@ -319,10 +319,17 @@ LABEL Linux
 EOF
 
 # modules
-if [ -d "$OUT_DIR/lib/modules" ]; then
+MODULES_SRC=""
+if [ -d "$OUT_DIR/modules/lib/modules" ]; then
+  MODULES_SRC="$OUT_DIR/modules/lib/modules"
+elif [ -d "$OUT_DIR/lib/modules" ]; then
+  MODULES_SRC="$OUT_DIR/lib/modules"
+fi
+
+if [ -n "$MODULES_SRC" ]; then
   info "Copying kernel modules..."
   mkdir -p "$MOUNT_PT/lib/modules"
-  cp -a "$OUT_DIR/lib/modules/"* "$MOUNT_PT/lib/modules/"
+  cp -a "$MODULES_SRC/"* "$MOUNT_PT/lib/modules/"
 fi
 
 # install firmware

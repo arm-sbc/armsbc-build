@@ -269,9 +269,16 @@ sudo mount "$ROOTFS_IMG" "$MNT_DIR"
 info "Copying rootfs into image ..."
 sudo rsync -aAX --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*"} "$ROOTFS_SRC/" "$MNT_DIR/" 2> >(grep -v "Permission denied" >&2)
 
-if [ -d "$OUT_DIR/lib/modules" ]; then
+MODULES_SRC=""
+if [ -d "$OUT_DIR/modules/lib/modules" ]; then
+  MODULES_SRC="$OUT_DIR/modules/lib/modules"
+elif [ -d "$OUT_DIR/lib/modules" ]; then
+  MODULES_SRC="$OUT_DIR/lib/modules"
+fi
+
+if [ -n "$MODULES_SRC" ]; then
   sudo mkdir -p "$MNT_DIR/lib/modules"
-  sudo cp -a "$OUT_DIR/lib/modules/"* "$MNT_DIR/lib/modules/"
+  sudo cp -a "$MODULES_SRC/"* "$MNT_DIR/lib/modules/"
 fi
 
 install_armbian_firmware "$MNT_DIR"
